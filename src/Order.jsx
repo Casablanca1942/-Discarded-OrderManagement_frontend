@@ -13,29 +13,47 @@ const Order = () => {
   });
 
   useEffect(() => {
-    fetch(variables.API_URL + "Order")
+    fetch(variables.API_URL)
       .then(response => response.json())
       .then(data => setOrders(data))
       .catch(error => console.error(error));
-  }, []);
+  }, []); 
 
   const submitOrder = () => {
-    const requestOptions = {
-      method: editOrder ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderForm)
+    let url = variables.API_URL;
+    let method = 'POST';
+    let body = {
+      "customerFirstName": orderForm.CustomerFirstName,
+      "customerLastName": orderForm.CustomerLastName,
+      "date": orderForm.Date,
+      "orderStatus": orderForm.OrderStatus,
     };
 
-    fetch(variables.API_URL + "Order", requestOptions)
-      .then(response => response.json())
-      .then(data => setOrders(prevOrders => {
-        if(editOrder) {
-          return prevOrders.map(order => order.OrderID === editOrder.OrderID ? data : order);
-        } else {
-          return [...prevOrders, data];
-        }
-      }))
-      .catch(error => console.error(error));
+    if (editOrder) {
+
+      method = 'PUT';
+      body = { ...body, "orderID": editOrder.OrderID };
+    }
+  
+    const requestOptions = {
+      method: method,
+      headers: { 
+        'Content-Type': 'application/json-patch+json',
+        'Ocp-Apim-Subscription-Key': '6f0df5c22f2443c4835d4d832d6e7336'
+      },
+      body: JSON.stringify(body),
+    };
+  
+    fetch(url, requestOptions)
+    .then(response => response.json())
+    .then(data => setOrders(prevOrders => {
+      if(editOrder) {
+        return prevOrders.map(order => order.OrderID === editOrder.OrderID ? data : order);
+      } else {
+        return [...prevOrders, data];
+      }
+    }))
+    .catch(error => console.error(error));
 
     setEditOrder(null);
 
@@ -61,7 +79,7 @@ const Order = () => {
   }, [editOrder]);
 
   const deleteOrder = (orderId) => {
-    fetch(`${variables.API_URL}Order/${orderId}`, { method: 'DELETE' })
+    fetch(`${variables.API_URL}${orderId}`, { method: 'DELETE' })
       .then(() => setOrders(prevOrders => prevOrders.filter(order => order.OrderID !== orderId)))
       .catch(error => console.error(error));
   }
